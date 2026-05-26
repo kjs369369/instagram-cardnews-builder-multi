@@ -49,6 +49,9 @@
     <button id="helpBtn" class="btn btn-ghost" type="button" title="사용법">
       <span class="btn-icon">?</span> 사용법
     </button>
+    <button id="apiKeyBtn" class="btn btn-ghost" type="button" title="OpenAI API 키 설정">
+      <span class="btn-icon">🔑</span> <span id="apiKeyBtnLabel">API 키</span>
+    </button>
     <button id="topicBtn" class="btn btn-primary" type="button">
       <span class="btn-icon">✨</span> 주제로 시작
     </button>
@@ -426,8 +429,54 @@
 
     <div class="topic-actions">
       <button class="btn btn-ghost" data-close-modal="topicModal" type="button">취소</button>
-      <button class="btn btn-accent" id="topicRegenerate" type="button">🎲 다시 생성</button>
-      <button class="btn btn-primary" id="topicGenerate" type="button">✨ 카드뉴스 만들기</button>
+      <button class="btn btn-accent" id="topicRegenerate" type="button" title="템플릿 기반 빠른 생성">🎲 다시 생성</button>
+      <button class="btn btn-primary" id="topicGenerate" type="button" title="템플릿 기반 빠른 생성">✨ 템플릿 생성</button>
+      <button class="btn btn-primary" id="topicAIGenerate" type="button" title="OpenAI API로 리서치 기반 생성 (10~15초)" style="background:linear-gradient(135deg,#10b981,#059669);">🤖 AI 리서치 생성</button>
+    </div>
+    <p class="topic-ai-hint" style="margin-top:12px;font-size:13px;color:#6b7280;text-align:center;">
+      🤖 AI 리서치는 OpenAI gpt-4o-mini 사용 · 1세트당 약 $0.002 · 본인 API 키 필요 (<a href="#" id="openApiKeyFromTopic" style="color:#059669;text-decoration:underline;">키 설정</a>)
+    </p>
+  </div>
+</div>
+
+<!-- API 키 설정 모달 -->
+<div class="modal modal-wide" id="apiKeyModal" aria-hidden="true">
+  <div class="modal-box modal-box-wide" style="max-width:560px;">
+    <button class="modal-x" data-close-modal="apiKeyModal" aria-label="닫기">✕</button>
+    <h3 class="modal-title">🔑 OpenAI API 키 설정</h3>
+    <p class="modal-sub">AI 리서치 기반 카드뉴스 생성을 위해 OpenAI API 키가 필요합니다. 키는 이 브라우저(LocalStorage)에만 저장되며 서버로 전송되지 않습니다.</p>
+
+    <div class="topic-form">
+      <div class="field">
+        <label for="apiKeyInput">OpenAI API 키 <span class="hint">(sk-로 시작)</span></label>
+        <input id="apiKeyInput" type="password" placeholder="sk-proj-..." autocomplete="off" spellcheck="false">
+        <p class="field-hint">현재 저장된 키: <strong id="apiKeyCurrentStatus">미설정</strong></p>
+      </div>
+
+      <div class="help-tips" style="margin-top:0;">
+        <h4>📌 키 발급 방법</h4>
+        <ul>
+          <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:#059669;">platform.openai.com/api-keys</a> 접속 → 로그인</li>
+          <li>우상단 <strong>Create new secret key</strong> 클릭 → 이름 입력 → 생성</li>
+          <li>표시되는 키(sk-로 시작) 복사 → 이 화면에 붙여넣기</li>
+          <li>OpenAI 결제 수단 등록 필요 (<a href="https://platform.openai.com/account/billing" target="_blank" rel="noopener" style="color:#059669;">결제 설정</a>) · 최소 $5 충전 권장</li>
+        </ul>
+      </div>
+
+      <div class="help-tips" style="margin-top:12px;">
+        <h4>💰 예상 비용</h4>
+        <ul>
+          <li>모델: <strong>gpt-4o-mini</strong> ($0.15 / 1M input, $0.60 / 1M output)</li>
+          <li>카드뉴스 1세트(8장) ≈ <strong>약 $0.002 (3원)</strong></li>
+          <li>$5 충전 = 약 2,500세트 생성 가능</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="topic-actions">
+      <button class="btn btn-ghost" id="apiKeyDelete" type="button">키 삭제</button>
+      <button class="btn btn-ghost" data-close-modal="apiKeyModal" type="button">취소</button>
+      <button class="btn btn-primary" id="apiKeySave" type="button">💾 저장</button>
     </div>
   </div>
 </div>
@@ -503,8 +552,9 @@
   <span>강의 워크숍용 무료 도구 · MIT License</span>
 </footer>
 
-<script src="examples.js?v=3"></script>
-<script src="topic-generator.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="examples.js?v=4"></script>
+<script src="topic-generator.js?v=4"></script>
+<script src="api-research.js?v=1"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

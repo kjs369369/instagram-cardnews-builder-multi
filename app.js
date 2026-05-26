@@ -614,6 +614,71 @@ function generateFromTopicForm({ closeAfter = true } = {}) {
   if (closeAfter) closeModalById('topicModal');
 }
 
+// ─────────────────────────────────────────────────────────
+// AI 리서치 기반 카드뉴스 생성 (OpenAI gpt-4o-mini)
+// ─────────────────────────────────────────────────────────
+async function generateFromAI() {
+  const topic    = document.getElementById('topicInput').value.trim();
+  const format   = (document.querySelector('input[name="topicFormat"]:checked') || {}).value || 'tips';
+  const tone     = (document.querySelector('input[name="topicTone"]:checked') || {}).value || 'info';
+  const category = (document.querySelector('input[name="topicCategory"]:checked') || {}).value || 'general';
+
+  if (!topic) {
+    const input = document.getElementById('topicInput');
+    input.focus();
+    input.style.borderColor = '#ef4444';
+    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  if (!window.AIResearch || !window.AIResearch.hasApiKey()) {
+    closeModalById('topicModal');
+    openModalById('apiKeyModal');
+    return;
+  }
+
+  // 진행 모달 표시 (다운로드 모달 재활용)
+  const status = document.getElementById('downloadStatus');
+  const progressText = document.getElementById('progressText');
+  const progressBar = document.getElementById('progressBar');
+  if (status) status.textContent = '🤖 AI가 카드뉴스를 작성 중...';
+  if (progressText) progressText.textContent = '리서치 + 카피 작성 (10~15초 소요)';
+  if (progressBar) progressBar.style.width = '40%';
+  openModalById('downloadModal');
+
+  try {
+    const aiResponse = await window.AIResearch.generateWithAI({ topic, category, format, tone });
+    const channel = document.getElementById('channel').value || '@my_channel';
+    const newState = window.AIResearch.aiResponseToState(aiResponse, { category, channel });
+
+    if (progressBar) progressBar.style.width = '100%';
+    if (progressText) progressText.textContent = '✅ 완료! 미리보기 확인하세요.';
+
+    Object.assign(state, newState);
+    syncFormFromState();
+
+    setTimeout(() => {
+      closeModalById('downloadModal');
+      closeModalById('topicModal');
+    }, 600);
+  } catch (err) {
+    closeModalById('downloadModal');
+    alert('❌ ' + err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// API 키 상태 UI 동기화
+// ─────────────────────────────────────────────────────────
+function updateApiKeyStatusUI() {
+  if (!window.AIResearch) return;
+  const key = window.AIResearch.getApiKey();
+  const btnLabel = document.getElementById('apiKeyBtnLabel');
+  const statusEl = document.getElementById('apiKeyCurrentStatus');
+  if (btnLabel) btnLabel.textContent = key ? 'API 키 ✓' : 'API 키';
+  if (statusEl) statusEl.textContent = window.AIResearch.maskApiKey(key);
+}
+
 function buildExamplesGrid() {
   const grid = document.getElementById('exampleGrid');
   if (!grid) return;
@@ -735,6 +800,51 @@ function setupModals() {
     openModalById('examplesModal');
   });
 
+  // ── API 키 모달 ──
+  const apiKeyBtn = document.getElementById('apiKeyBtn');
+  if (apiKeyBtn) {
+    apiKeyBtn.addEventListener('click', () => {
+      const inp = document.getElementById('apiKeyInput');
+      if (inp) inp.value = '';
+      updateApiKeyStatusUI();
+      openModalById('apiKeyModal');
+    });
+  }
+  const apiKeySave = document.getElementById('apiKeySave');
+  if (apiKeySave) {
+    apiKeySave.addEventListener('click', () => {
+      const v = document.getElementById('apiKeyInput').value;
+      if (window.AIResearch && window.AIResearch.setApiKey(v)) {
+        updateApiKeyStatusUI();
+        closeModalById('apiKeyModal');
+      } else {
+        alert('키를 입력해주세요. (sk-로 시작)');
+      }
+    });
+  }
+  const apiKeyDelete = document.getElementById('apiKeyDelete');
+  if (apiKeyDelete) {
+    apiKeyDelete.addEventListener('click', () => {
+      if (!confirm('저장된 API 키를 삭제할까요?')) return;
+      window.AIResearch.setApiKey('');
+      updateApiKeyStatusUI();
+      document.getElementById('apiKeyInput').value = '';
+    });
+  }
+
+  // ── AI 리서치 생성 버튼 ──
+  const topicAI = document.getElementById('topicAIGenerate');
+  if (topicAI) topicAI.addEventListener('click', generateFromAI);
+
+  const openApiKeyFromTopic = document.getElementById('openApiKeyFromTopic');
+  if (openApiKeyFromTopic) {
+    openApiKeyFromTopic.addEventListener('click', e => {
+      e.preventDefault();
+      closeModalById('topicModal');
+      openModalById('apiKeyModal');
+    });
+  }
+
   // 첫 방문 인라인 힌트 (모달 X — 페이지 사용 차단 안 함)
   if (!localStorage.getItem('cardnews-builder-welcomed')) {
     examplesBtn.classList.add('pulse');
@@ -770,6 +880,7 @@ function init() {
   setupModals();
   document.getElementById('downloadBtn').addEventListener('click', downloadAll);
   document.getElementById('resetBtn').addEventListener('click', reset);
+  updateApiKeyStatusUI();
   updateAll();
 }
 
